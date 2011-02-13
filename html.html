@@ -1,0 +1,45 @@
+<html>
+  <head>
+    <title>foo</title>
+    <link href="foo.css" />
+  </head>
+  <body>
+<span class="nb">require</span> <span class="s1">&#39;time&#39;</span>
+
+<span class="k">class</span> <span class="nc">LogfileParser</span>
+
+  <span class="no">TIME_REGEXP</span>   <span class="o">=</span> <span class="sr">/\[\d{2}\/\w{3}\/\d{4}\:\d{2}:\d{2}:\d{2}\s.{5}\]/</span>
+
+  <span class="k">def</span> <span class="nf">initialize</span> <span class="n">path</span><span class="p">,</span> <span class="n">starting_at</span>
+    <span class="k">raise</span> <span class="no">ArgumentError</span> <span class="k">unless</span> <span class="no">File</span><span class="o">.</span><span class="n">exists?</span><span class="p">(</span> <span class="n">path</span> <span class="p">)</span>
+
+    <span class="vi">@log</span>          <span class="o">=</span> <span class="no">File</span><span class="o">.</span><span class="n">open</span><span class="p">(</span> <span class="n">path</span> <span class="p">)</span>
+    <span class="vi">@starting_at</span>  <span class="o">=</span> <span class="no">Time</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span> <span class="n">starting_at</span> <span class="p">)</span>
+    <span class="vi">@ending_at</span>    <span class="o">=</span> <span class="p">(</span><span class="vi">@starting_at</span> <span class="o">+</span> <span class="mi">300</span><span class="p">)</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">emit</span> <span class="o">&amp;</span><span class="n">block</span>
+    <span class="vi">@log</span><span class="o">.</span><span class="n">each_line</span> <span class="k">do</span> <span class="o">|</span><span class="n">line</span><span class="o">|</span>
+      <span class="n">timestamp</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">match</span><span class="p">(</span> <span class="no">TIME_REGEXP</span> <span class="p">)</span>
+      <span class="k">next</span> <span class="k">unless</span> <span class="n">timestamp</span>
+
+      <span class="n">current_time</span> <span class="o">=</span> <span class="no">Time</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span> <span class="n">timestamp</span><span class="o">[</span><span class="mi">0</span><span class="o">].</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">current_time</span> <span class="o">&gt;=</span> <span class="vi">@starting_at</span> <span class="o">&amp;&amp;</span> <span class="n">current_time</span> <span class="o">&lt;=</span> <span class="vi">@ending_at</span>
+        <span class="k">yield</span> <span class="n">line</span>
+      <span class="k">end</span>
+
+      <span class="k">if</span> <span class="n">current_time</span> <span class="o">&gt;</span> <span class="vi">@ending_at</span>
+        <span class="k">return</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+
+<span class="k">end</span>
+
+<span class="n">parser</span> <span class="o">=</span> <span class="no">LogfileParser</span><span class="o">.</span><span class="n">new</span><span class="p">(</span> <span class="o">*</span><span class="no">ARGV</span> <span class="p">)</span>
+
+<span class="n">parser</span><span class="o">.</span><span class="n">emit</span> <span class="p">{</span><span class="o">|</span><span class="n">l</span><span class="o">|</span> <span class="nb">puts</span> <span class="n">l</span><span class="p">}</span>
+
+</body>
+</html>
